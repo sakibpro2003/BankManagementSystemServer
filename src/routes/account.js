@@ -11,7 +11,15 @@ router.get("/me", authenticate, async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    return res.json({ user });
+    return res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        balance: user.balance ?? 0
+      }
+    });
   } catch (err) {
     return res.status(500).json({ message: "Failed to fetch profile.", error: err.message });
   }
