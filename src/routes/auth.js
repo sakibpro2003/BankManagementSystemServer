@@ -29,8 +29,11 @@ router.post("/register", async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        accountNumber: user.accountNumber,
         role: user.role,
-        balance: user.balance ?? 0
+        balance: user.balance ?? 0,
+        status: user.status,
+        closedAt: user.closedAt
       },
       token
     });
@@ -40,16 +43,23 @@ router.post("/register", async (req, res) => {
 });
 
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, accountNumber, identifier, password } = req.body;
+  const loginIdentifier = (identifier || email || accountNumber || "").toString().trim();
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email and password are required." });
+  if (!loginIdentifier || !password) {
+    return res.status(400).json({ message: "Email/account number and password are required." });
   }
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      $or: [{ email: loginIdentifier }, { accountNumber: loginIdentifier }]
+    });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials." });
+    }
+
+    if (user.status === "closed") {
+      return res.status(403).json({ message: "This account has been closed." });
     }
 
     const passwordMatches = await user.comparePassword(password);
@@ -63,8 +73,11 @@ router.post("/login", async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        accountNumber: user.accountNumber,
         role: user.role,
-        balance: user.balance ?? 0
+        balance: user.balance ?? 0,
+        status: user.status,
+        closedAt: user.closedAt
       },
       token
     });
